@@ -1,11 +1,11 @@
 # St. Austin Teaching Platform
 
-Next.js app with PostgreSQL initialized via Prisma.
+Next.js application with PostgreSQL via Prisma.
 
 ## Prerequisites
 
 - Node.js 20+
-- PostgreSQL running locally
+- PostgreSQL running locally on your machine
 
 ## Setup
 
@@ -15,13 +15,14 @@ Next.js app with PostgreSQL initialized via Prisma.
 npm install
 ```
 
-2. Copy env file and set your local database URL:
+2. Set your database connection string:
 
 ```bash
 cp .env.example .env
+# Edit .env and provide a valid DATABASE_URL
 ```
 
-3. Create the local database (example):
+3. Create your database:
 
 ```bash
 createdb st_austin
@@ -44,4 +45,3 @@ npm run dev
 - `npm run db:generate` generates Prisma client
 - `npm run db:migrate` runs Prisma migrations in dev
 - `npm run db:studio` opens Prisma Studio
-
