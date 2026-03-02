@@ -11,6 +11,7 @@ import { AdminUserManagementTable } from "@/components/admin-user-management-tab
 import { AdminAnnouncementsManager } from "@/components/admin-announcements-manager";
 import { AnnouncementsFeed } from "@/components/announcements-feed";
 import { CoursesModule } from "@/components/courses-module";
+import { AssignmentsModule } from "@/components/assignments-module";
 
 type Props = {
   searchParams: Promise<{ module?: string }>;
@@ -484,6 +485,47 @@ export default async function DashboardPage({ searchParams }: Props) {
     }
   }
 
+  let moduleKpiLabel = "Module Status";
+  let moduleKpiValue: string | number = "Ready";
+  let moduleKpiHint = `${selected.title} module`;
+
+  if (selected.slug === "announcements" || selected.slug === "announcements-feed" || selected.slug === "overview") {
+    moduleKpiLabel = "Announcements";
+    moduleKpiValue = announcementCount;
+    moduleKpiHint = "available for your role";
+  } else if (selected.slug === "courses") {
+    const coursesCount = await prisma.course.count({
+      where: isSuperAdmin
+        ? {}
+        : session.user.role === Role.TEACHER
+          ? { teacherId: session.user.id }
+          : { enrollments: { some: { studentId: session.user.id, status: "ACTIVE" } } },
+    });
+    moduleKpiLabel = session.user.role === Role.STUDENT ? "Enrolled Courses" : "Courses";
+    moduleKpiValue = coursesCount;
+    moduleKpiHint = "in this module";
+  } else if (selected.slug === "assessment") {
+    const assignmentCount = await prisma.assignment.count({
+      where:
+        session.user.role === Role.SUPER_ADMIN
+          ? {}
+          : session.user.role === Role.TEACHER
+            ? { course: { teacherId: session.user.id } }
+            : { course: { enrollments: { some: { studentId: session.user.id, status: "ACTIVE" } } } },
+    });
+    moduleKpiLabel = "Assignments";
+    moduleKpiValue = assignmentCount;
+    moduleKpiHint = "in this module";
+  } else if (selected.slug === "view-teachers") {
+    moduleKpiLabel = "Teachers";
+    moduleKpiValue = teacherList.length;
+    moduleKpiHint = "total records";
+  } else if (selected.slug === "view-students") {
+    moduleKpiLabel = "Students";
+    moduleKpiValue = studentList.length;
+    moduleKpiHint = "total records";
+  }
+
   return (
     <main className="min-h-screen lg:flex">
       <DashboardSidebar role={session.user.role} selectedSlug={selected.slug} />
@@ -501,9 +543,9 @@ export default async function DashboardPage({ searchParams }: Props) {
               <h2 className="brand-title brand-title-gradient mt-3 text-4xl font-black">{selected.title}</h2>
             </div>
             <div className="brand-accent-card min-w-[170px] px-5 py-4 text-right">
-              <p className="text-xs uppercase tracking-[0.16em] text-[#3f6fae]">Announcements</p>
-              <p className="mt-2 text-3xl font-bold text-[#916900]">{announcementCount}</p>
-              <p className="text-xs text-[#3a689f]">available for your role</p>
+              <p className="text-xs uppercase tracking-[0.16em] text-[#3f6fae]">{moduleKpiLabel}</p>
+              <p className="mt-2 text-3xl font-bold text-[#916900]">{moduleKpiValue}</p>
+              <p className="text-xs text-[#3a689f]">{moduleKpiHint}</p>
             </div>
           </div>
         </section>
@@ -536,6 +578,8 @@ export default async function DashboardPage({ searchParams }: Props) {
           <AnnouncementsFeed announcements={serializedLearnerAnnouncements} />
         ) : selected.slug === "courses" ? (
           <CoursesModule role={session.user.role} />
+        ) : selected.slug === "assessment" ? (
+          <AssignmentsModule role={session.user.role} />
         ) : selected.slug === "view-teachers" ? (
           <section className="grid gap-4">
             <article className="brand-card p-5">
